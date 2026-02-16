@@ -26,3 +26,7 @@ declare global {
   }
 }
 
+export interface Line {
+  type: "command" | "output"
+  text: string
+}

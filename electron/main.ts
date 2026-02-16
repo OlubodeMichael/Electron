@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron"
+import { app, BrowserWindow, ipcMain, dialog, session } from "electron"
 import fs from "fs"
 import http from "http"
 import path from "path"
@@ -43,9 +43,25 @@ const waitForDevServer = (): Promise<void> => {
 }
 
 const createWindow = () => {
+  const isDev = process.env.ELECTRON_DEV === "1" || process.env.NODE_ENV === "development"
+
+  // Content-Security-Policy: strict in production, allow HMR in dev
+  const ses = session.defaultSession
+  ses.webRequest.onHeadersReceived((details, callback) => {
+    const csp = isDev
+      ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss: http://localhost:* https://localhost:*; font-src 'self'; base-uri 'self'"
+      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; base-uri 'self'"
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        "Content-Security-Policy": [csp],
+      },
+    })
+  })
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 1000,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -66,6 +82,10 @@ const createWindow = () => {
 
   ipcMain.handle("get-folder-children", async (_, dirPath: string) => {
     return getDirectChildren(dirPath)
+  })
+
+  ipcMain.handle("run-command", async (_, cmd: string) => {
+    return cmd + " executed"
   })
 
   const BINARY_EXTENSIONS: Record<string, string> = {
@@ -112,7 +132,6 @@ const createWindow = () => {
   })
   
 
-  const isDev = process.env.ELECTRON_DEV === "1" || process.env.NODE_ENV === "development"
   const outPath = path.join(__dirname, "../out/index.html")
   const hasBuiltApp = fs.existsSync(outPath)
 

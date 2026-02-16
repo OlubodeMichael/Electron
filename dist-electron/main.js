@@ -35,9 +35,23 @@ const waitForDevServer = () => {
     });
 };
 const createWindow = () => {
+    const isDev = process.env.ELECTRON_DEV === "1" || process.env.NODE_ENV === "development";
+    // Content-Security-Policy: strict in production, allow HMR in dev
+    const ses = electron_1.session.defaultSession;
+    ses.webRequest.onHeadersReceived((details, callback) => {
+        const csp = isDev
+            ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss: http://localhost:* https://localhost:*; font-src 'self'; base-uri 'self'"
+            : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; base-uri 'self'";
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                "Content-Security-Policy": [csp],
+            },
+        });
+    });
     mainWindow = new electron_1.BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1400,
+        height: 1000,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -98,7 +112,6 @@ const createWindow = () => {
             content: fs_1.default.readFileSync(filePath, "utf8"),
         };
     });
-    const isDev = process.env.ELECTRON_DEV === "1" || process.env.NODE_ENV === "development";
     const outPath = path_1.default.join(__dirname, "../out/index.html");
     const hasBuiltApp = fs_1.default.existsSync(outPath);
     if (isDev || !hasBuiltApp) {

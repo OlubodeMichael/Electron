@@ -1,5 +1,8 @@
-import { FolderOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react"
-import Button from "./Button"
+import { FolderOpen, PanelLeftClose, PanelLeftOpen, Terminal } from "lucide-react"
+import Button from "../ui/Button"
+
+const SIDEBAR_WIDTH_CLOSED = 48
+const SIDEBAR_WIDTH_OPEN_DEFAULT = 288 // w-72
 
 interface SidebarProps {
   open: boolean
@@ -7,7 +10,10 @@ interface SidebarProps {
   folder: string | null
   tree: TreeNode[]
   onOpenFolder: (path?: string | null) => void
+  onOpenTerminal?: () => void
   renderNode: (node: TreeNode, depth: number) => React.ReactNode
+  /** When open, use this width so the sidebar can be resized; otherwise uses default. */
+  width?: number
 }
 
 export default function Sidebar({
@@ -16,25 +22,26 @@ export default function Sidebar({
   folder,
   tree,
   onOpenFolder: handleOpenFolder,
+  onOpenTerminal: handleOpenTerminal,
   renderNode,
+  width,
 }: SidebarProps) {
   const displayPath = folder ? folder.replace(/^\/Users\/[^/]+/, "~") : null
-    return (
-        <aside
-        className={`flex shrink-0 flex-col border-r border-(--border) bg-(--bg-surface) transition-[width] duration-200 ease-out ${
-          sidebarOpen ? "w-72" : "w-12 min-w-12"
-        }`}
-      >
+  const openWidth = width ?? SIDEBAR_WIDTH_OPEN_DEFAULT
+  return (
+    <aside
+      className="flex shrink-0 flex-col border-r border-(--border) bg-(--bg-surface) transition-[width] cursor-ew-resize duration-200 ease-out"
+      style={{
+        width: sidebarOpen ? openWidth : SIDEBAR_WIDTH_CLOSED,
+        minWidth: sidebarOpen ? undefined : SIDEBAR_WIDTH_CLOSED,
+      }}
+    >
         {sidebarOpen ? (
-          <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-(--border) px-2">
-            <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">
-              Explorer
-            </h1>
-            <div className="flex items-center gap-1">
-              <Button onClick={() => handleOpenFolder(folder ?? undefined)} variant="ghost" className="px-2">
-                <FolderOpen className="w-4 h-4" />
-                Open folder
-              </Button>
+          <>
+            <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-(--border) px-2">
+              <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">
+                Explorer
+              </h1>
               <Button
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
@@ -44,7 +51,28 @@ export default function Sidebar({
                 <PanelLeftClose className="w-4 h-4" />
               </Button>
             </div>
-          </div>
+            <div className="shrink-0 border-b border-(--border) p-2">
+              <div className="flex flex-col gap-0.5">
+                <Button
+                  onClick={() => handleOpenFolder(folder ?? undefined)}
+                  variant="ghost"
+                  className="justify-start gap-2 px-2 py-1.5 text-sm"
+                >
+                  <FolderOpen className="w-4 h-4 shrink-0" />
+                  Open folder
+                </Button>
+                <Button
+                  onClick={handleOpenTerminal}
+                  variant="ghost"
+                  className="justify-start gap-2 px-2 py-1.5 text-sm"
+                  aria-label="Open terminal"
+                >
+                  <Terminal className="w-4 h-4 shrink-0" />
+                  Terminal
+                </Button>
+              </div>
+            </div>
+          </>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-start pt-2">
             <Button

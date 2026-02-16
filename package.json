@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"next dev\" \"ELECTRON_DEV=1 NODE_OPTIONS='--no-deprecation' electron .\"",
+    "dev": "concurrently \"next dev\" \"ELECTRON_DEV=1 ELECTRON_DISABLE_SECURITY_WARNINGS=1 NODE_OPTIONS='--no-deprecation' electron .\"",
     "build": "next build && next export",
     "start": "electron .",
     "electron": "electron dist-electron/main.js",
