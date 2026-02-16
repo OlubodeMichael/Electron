@@ -5,10 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react"
 type Line = { type: "command" | "output"; text: string }
 
 const PROMPT = "→ "
-const CWD = "~ "
 
-export default function Terminal({ onRunCommand }: { onRunCommand: (cmd: string) => void }) {
-  const [input, setInput] = useState("")
+export default function Terminal({ command, cwd }: { command: string; cwd: string }) {
+  const [input, setInput] = useState(command)
   const [lines, setLines] = useState<Line[]>([
     { type: "output", text: "> next dev\n▲ Next.js 15.x\n- Local: http://localhost:3000" },
   ])
@@ -23,20 +22,35 @@ export default function Terminal({ onRunCommand }: { onRunCommand: (cmd: string)
     scrollToBottom()
   }, [lines, input, scrollToBottom])
 
-  const runCommand = useCallback((cmd: string) => {
-    const trimmed = cmd.trim()
-    if (trimmed.toLowerCase() === "clear") {
-      setLines([])
-      return
-    }
-    setLines((prev) => [...prev, { type: "command", text: trimmed }])
-    if (trimmed) {
-      setLines((prev) => [
-        ...prev,
-        { type: "output", text: `Command not found: ${trimmed}` },
-      ])
-    }
-  }, [])
+  const runCommand = useCallback(
+    (cmd: string) => {
+      const trimmed = cmd.trim()
+      if (trimmed.toLowerCase() === "clear") {
+        setLines([])
+        return
+      }
+      setLines((prev) => [...prev, { type: "command", text: trimmed }])
+      if (!trimmed) return
+
+      if (typeof window !== "undefined" && window.api?.runCommand) {
+        window.api
+          .runCommand(trimmed, cwd)
+          .then((output) => {
+            setLines((prev) => [...prev, { type: "output", text: output.trim() || "" }])
+          })
+          .catch((err: Error | string) => {
+            const message = typeof err === "string" ? err : err?.message ?? "Command failed"
+            setLines((prev) => [...prev, { type: "output", text: message }])
+          })
+      } else {
+        setLines((prev) => [
+          ...prev,
+          { type: "output", text: "Command not available (not in Electron)." },
+        ])
+      }
+    },
+    [cwd]
+  )
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -73,8 +87,8 @@ export default function Terminal({ onRunCommand }: { onRunCommand: (cmd: string)
               {line.type === "command" ? (
                 <p className="text-(--text-secondary)">
                   <span className="text-(--accent)">{PROMPT}</span>{" "}
-                  <span className="text-(--text-muted)">{CWD}</span>
-                  <span className="text-foreground">{line.text}</span>
+                  <span className="text-(--text-muted)">{cwd.replace(/^\/Users\/[^/]+/, "~")}</span>
+                  <span className="text-foreground"> {line.text}</span>
                 </p>
               ) : (
                 <p className="whitespace-pre-wrap text-(--text-muted)">
@@ -85,7 +99,7 @@ export default function Terminal({ onRunCommand }: { onRunCommand: (cmd: string)
           ))}
           <div className="flex flex-wrap items-center gap-0">
             <span className="text-(--accent)">{PROMPT}</span>
-            <span className="text-(--text-muted)">{CWD}</span>
+            <span className="text-(--text-muted)">{cwd.replace(/^\/Users\/[^/]+/, "~")}</span>
             <input
               ref={inputRef}
               type="text"

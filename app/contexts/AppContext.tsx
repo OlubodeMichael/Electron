@@ -29,7 +29,7 @@ interface AppContextValue {
   setTerminalOpen: (v: boolean | ((prev: boolean) => boolean)) => void
   handleOpenFolder: (defaultPath?: string | null) => Promise<void>
   handleReadFile: (filePath: string) => Promise<void>
-  handleRunCommand: (cmd: string) => Promise<void>
+  handleRunCommand: (cmd: string, cwd: string) => Promise<void>
   renderNode: (node: TreeNode, depth: number) => ReactNode
 }
 
@@ -66,9 +66,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const handleRunCommand = useCallback(async (cmd: string) => {
-    await window.api.runCommand(cmd)
-  }, [])
+  const handleRunCommand = useCallback(
+    async (cmd: string, cwd: string) => {
+      await window.api.runCommand(cmd, cwd)
+    },
+    []
+  )
 
   const renderNode = useCallback(
     (node: TreeNode, depth: number) => {

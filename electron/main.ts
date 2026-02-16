@@ -1,8 +1,10 @@
 import { app, BrowserWindow, ipcMain, dialog, session } from "electron"
 import fs from "fs"
 import http from "http"
+import os from "os"
 import path from "path"
 import mammoth from "mammoth"
+import { exec } from "child_process"
 
 interface TreeNode {
   name: string
@@ -84,8 +86,21 @@ const createWindow = () => {
     return getDirectChildren(dirPath)
   })
 
-  ipcMain.handle("run-command", async (_, cmd: string) => {
-    return cmd + " executed"
+  ipcMain.handle("run-command", async (_, cmd: string, cwd: string) => {
+    const workDir = cwd === "~" ? os.homedir() : cwd
+    return new Promise((resolve, reject) => {
+      exec(
+        cmd,
+        { cwd: workDir },
+        (error, stdout, stderr) => {
+          if (error) {
+            reject(stderr || error.message)
+            return
+          }
+          resolve(stdout)
+        }
+      )
+    })
   })
 
   const BINARY_EXTENSIONS: Record<string, string> = {

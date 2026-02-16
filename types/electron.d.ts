@@ -15,7 +15,8 @@ declare global {
         | { type: "text"; content: string }
         | { type: "binary"; mimeType: string; data: string }
       >
-      runCommand: (cmd: string) => Promise<string>
+      runCommand: (cmd: string, cwd: string) => Promise<string>
+      
     }
   }
   interface TreeNode {

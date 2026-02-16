@@ -6,8 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const fs_1 = __importDefault(require("fs"));
 const http_1 = __importDefault(require("http"));
+const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const mammoth_1 = __importDefault(require("mammoth"));
+const child_process_1 = require("child_process");
 const SKIP_DIRS = new Set(["node_modules", ".git", ".next", "__pycache__", ".venv", "venv"]);
 function getDirectChildren(dirPath) {
     const items = fs_1.default.readdirSync(dirPath);
@@ -71,6 +73,18 @@ const createWindow = () => {
     });
     electron_1.ipcMain.handle("get-folder-children", async (_, dirPath) => {
         return getDirectChildren(dirPath);
+    });
+    electron_1.ipcMain.handle("run-command", async (_, cmd, cwd) => {
+        const workDir = cwd === "~" ? os_1.default.homedir() : cwd;
+        return new Promise((resolve, reject) => {
+            (0, child_process_1.exec)(cmd, { cwd: workDir }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(stderr || error.message);
+                    return;
+                }
+                resolve(stdout);
+            });
+        });
     });
     const BINARY_EXTENSIONS = {
         pdf: "application/pdf",

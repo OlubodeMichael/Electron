@@ -27,7 +27,6 @@ export default function AppShell({ children }: AppShellProps) {
     terminalOpen,
     setTerminalOpen,
     handleOpenFolder,
-    handleRunCommand,
     renderNode,
   } = useApp()
   const [terminalHeight, setTerminalHeight] = useState(DEFAULT_TERMINAL_HEIGHT)
@@ -84,7 +83,10 @@ export default function AppShell({ children }: AppShellProps) {
                   maxHeight: MAX_TERMINAL_HEIGHT,
                 }}
                 >
-                  <Terminal onRunCommand={handleRunCommand} />
+                  <Terminal
+                  command=""
+                  cwd={folder ?? "~"}
+                />
                 </div>
             </>
           )}
